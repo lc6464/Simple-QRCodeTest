@@ -69,7 +69,9 @@ if (!directoryInfo.Exists) {
 }
 
 Dictionary<EncodeHintType, object> hints = new() { // 纠错等级：低
-	{ EncodeHintType.ERROR_CORRECTION, ZXing.QrCode.Internal.ErrorCorrectionLevel.L }
+	{ EncodeHintType.ERROR_CORRECTION, ZXing.QrCode.Internal.ErrorCorrectionLevel.L },
+	{ EncodeHintType.CHARACTER_SET, "UTF-8" }, // UTF-8
+	{ EncodeHintType.MARGIN, 0 } // 不留白
 };
 
 
@@ -115,7 +117,7 @@ if (type == ActionType.Encode) { // 编码模式
 			if (!File.Exists(str)) {
 				Console.Error.WriteLine($"文件不存在！");
 				continue;
-            }
+			}
 
 			using Bitmap bitmap = new(str);
 
