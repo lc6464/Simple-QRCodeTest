@@ -1,7 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-// Console.WriteLine("Hello, World!");
-
-ActionType type;
+﻿ActionType type;
 string[]? strings = null;
 if (args.Length > 1) { // 直接读取 CLI 参数
 	type = ParseActionType(args[0]);
@@ -33,10 +30,10 @@ if (args.Length > 1) { // 直接读取 CLI 参数
 }
 
 List<string> readList = new();
-if (strings == null || strings.Length == 0) {
+if (strings is null || strings.Length == 0) {
 	Console.WriteLine($"请输入要{(type == ActionType.Encode ? "编码的文本" : "解码的图片路径")}，一行一个：");
 	while (true) {
-		string? read = Console.ReadLine()?.Trim();
+		var read = Console.ReadLine()?.Trim();
 		if (string.IsNullOrWhiteSpace(read)) {
 			break;
 		}
@@ -76,19 +73,19 @@ Dictionary<EncodeHintType, object> hints = new() { // 纠错等级：低
 
 
 if (type == ActionType.Encode) { // 编码模式
-	foreach (string str in strings) {
+	foreach (var str in strings) {
 		Console.Write($"{(str.Length < 32 ? str : (str[..32] + "..."))} ... ");
 
 		try { // 编码数据
 			QRCodeWriter writer = new();
-			BitMatrix data = writer.encode(str, BarcodeFormat.QR_CODE, 1000, 1000, hints);
+			var data = writer.encode(str, BarcodeFormat.QR_CODE, 1000, 1000, hints);
 
 			try { // 生成二维码
 				BitmapRenderer renderer = new();
-				using Bitmap bitmap = renderer.Render(data, BarcodeFormat.QR_CODE, str);
+				using var bitmap = renderer.Render(data, BarcodeFormat.QR_CODE, str);
 
-				Guid guid = Guid.NewGuid();
-				string fileName = $@"Results\{DateTime.Now:HH-mm-ss}_{guid}.png";
+				var guid = Guid.NewGuid();
+				var fileName = $@"Results\{DateTime.Now:HH-mm-ss}_{guid}.png";
 
 				try {
 					bitmap.Save(fileName);
@@ -110,7 +107,7 @@ if (type == ActionType.Encode) { // 编码模式
 		}
 	}
 } else { // 解码模式
-	foreach (string str in strings) {
+	foreach (var str in strings) {
 		Console.Write($"{str} ... ");
 
 		try { // 读取文件
@@ -123,13 +120,13 @@ if (type == ActionType.Encode) { // 编码模式
 
 			try {
 				QRCodeReader reader = new();
-				Result result = reader.decode(new BinaryBitmap(new HybridBinarizer(new BitmapLuminanceSource(bitmap))));
+				var result = reader.decode(new BinaryBitmap(new HybridBinarizer(new BitmapLuminanceSource(bitmap))));
 
-				if (result == null) {
+				if (result is null) {
 					Console.Error.WriteLine("二维码识别失败。");
 				} else {
-					Guid guid = Guid.NewGuid();
-					string fileName = $@"Results\{DateTime.Now:HH-mm-ss}_{guid}.txt";
+					var guid = Guid.NewGuid();
+					var fileName = $@"Results\{DateTime.Now:HH-mm-ss}_{guid}.txt";
 
 					try {
 						File.WriteAllText(fileName, $"{str}\r\n{result.Text}");
@@ -155,12 +152,10 @@ if (type == ActionType.Encode) { // 编码模式
 
 
 
-static ActionType ParseActionType(string? s, bool toLower = true) {
-	return (toLower ? s?.ToLower() : s) switch {
-		"d" or "decode" or "Decode" => ActionType.Decode,
-		"e" or "encode" or "Encode" => ActionType.Encode,
-		_ => ActionType.Unknow
-	};
-}
+static ActionType ParseActionType(string? s, bool toLower = true) => (toLower ? s?.ToLower() : s) switch {
+	"d" or "decode" or "Decode" => ActionType.Decode,
+	"e" or "encode" or "Encode" => ActionType.Encode,
+	_ => ActionType.Unknow
+};
 
-enum ActionType { Encode, Decode, Unknow }
+internal enum ActionType { Encode, Decode, Unknow }
