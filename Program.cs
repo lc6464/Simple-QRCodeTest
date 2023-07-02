@@ -50,12 +50,39 @@ if (strings.Length == 0) {
 
 
 DirectoryInfo directoryInfo = new("Results"); // 创建文件夹
-if (!directoryInfo.Exists) {
-	if (File.Exists(directoryInfo.Name)) {
-		Console.Error.WriteLine($"存在 {directoryInfo.Name} 文件，无法创建文件夹！");
-		return;
+if (!directoryInfo.Exists) { // 文件夹不存在
+	if (File.Exists(directoryInfo.Name)) { // 存在同名文件
+		Console.WriteLine($"存在 {directoryInfo.Name} 文件！");
+		if (StringExtensions.GetUserConfirm("是否删除该文件并创建新的文件夹？若选否可以选择重命名或取消操作。")) { // 向确认是否删除同名文件
+			try { // 删除文件
+				File.Delete(directoryInfo.Name);
+				Console.WriteLine($"文件 {directoryInfo.Name} 已被删除。");
+			} catch (Exception e) {
+				Console.Error.WriteLine($"删除文件 {directoryInfo.Name} 时发生异常！");
+				Console.Error.Write($"异常：{e.Message}\r\n详细信息：");
+				Console.Error.WriteLine(e);
+				return;
+			}
+		} else {
+			if (StringExtensions.GetUserConfirm("是否重命名该文件并创建新的文件夹？")) { // 向确认是否重命名同名文件
+				try { // 重命名文件
+					var guid = Guid.NewGuid();
+					var fileName = $@"{directoryInfo.Name}.{guid}.bak";
+					File.Move(directoryInfo.Name, fileName);
+					Console.WriteLine($@"文件 {directoryInfo.Name} 已被重命名为 {fileName}。");
+				} catch (Exception e) {
+					Console.Error.WriteLine($"移动文件 {directoryInfo.Name} 时发生异常！");
+					Console.Error.Write($"异常：{e.Message}\r\n详细信息：");
+					Console.Error.WriteLine(e);
+					return;
+				}
+			} else { // 取消操作
+				Console.WriteLine($@"已取消操作，文件 {directoryInfo.Name} 没有被修改。");
+				return;
+			}
+		}
 	}
-	try {
+	try { // 创建文件夹
 		directoryInfo.Create();
 	} catch (Exception e) {
 		Console.Error.WriteLine($"创建文件夹 {directoryInfo.Name} 时发生异常！");
@@ -65,15 +92,15 @@ if (!directoryInfo.Exists) {
 	}
 }
 
-Dictionary<EncodeHintType, object> hints = new() { // 纠错等级：低
-	{ EncodeHintType.ERROR_CORRECTION, ZXing.QrCode.Internal.ErrorCorrectionLevel.L },
+Dictionary<EncodeHintType, object> hints = new() { // 二维码参数
+	{ EncodeHintType.ERROR_CORRECTION, ZXing.QrCode.Internal.ErrorCorrectionLevel.L }, // 纠错等级：低
 	{ EncodeHintType.CHARACTER_SET, "UTF-8" }, // UTF-8
 	{ EncodeHintType.MARGIN, 0 } // 不留白
 };
 
 
 if (type == ActionType.Encode) { // 编码模式
-	foreach (var str in strings) {
+	foreach (var str in strings) { // 遍历参数批量编码
 		Console.Write($"{(str.Length < 32 ? str : (str[..32] + "..."))} ... ");
 
 		try { // 编码数据
@@ -107,8 +134,8 @@ if (type == ActionType.Encode) { // 编码模式
 		}
 	}
 } else { // 解码模式
-	foreach (var str in strings) {
-		Console.Write($"{str} ... ");
+	foreach (var str in strings) { // 遍历参数批量解码
+		Console.Write($"{(str.Length < 32 ? str : (str[..32] + "..."))} ... ");
 
 		try { // 读取文件
 			if (!File.Exists(str)) {
